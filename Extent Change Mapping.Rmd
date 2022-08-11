@@ -1,0 +1,112 @@
+---
+title: "Ecosystem Extent Map"
+output: html_document
+date: '2022-08-08'
+---
+Aim- to map changes in ecosystem extent by Moku in the main Hawaiian Islands (MHI) on an interactive map
+
+This first notebook loads the raster data and carries out initial processing.
+Exporting a cropped area of interest raster
+
+Reference for processing raster Land Cover https://bookdown.org/mcwimberly/gdswr-book/raster-data-discrete-variables.html
+---
+
+```{r setup}
+library(leaflet)
+library(raster)
+library(rgdal)
+library(tidyverse)
+```
+
+```{r}
+data_DIR <- "C:/all_data/remote sensing data"
+raster_path <- file.path(data_DIR, "/LCMAP Land Cover data/lcmap_2000_2011/LCMAP_HI_2000_V10_LCPRI.tiff")
+
+vector_path <- file.path(data_DIR, "/State GIS Portal data/Moku_Ridge_To_Reef_(DAR)/oahu_moku.shp")
+```
+
+
+First, import Land Cover/ Land-use raster, and vector layer to mask it with
+
+```{r}
+lu_raster <- raster(raster_path)
+mask_vector <- readOGR(vector_path)
+plot(mask_vector)
+```
+
+Mask LC raster with vector mask (ie. island/ Moku vector)
+
+```{r}
+lu_raster_proj <- projectRaster(lu_raster, crs = "+proj=longlat +datum=WGS84")
+
+mask_vector <-spTransform(mask_vector, CRS("+proj=longlat +datum=WGS84"))
+masked_raster <- mask(x = lu_raster_proj, mask = mask_vector)
+plot(masked_raster)
+```
+Crop the Raster 
+
+```{r}
+cropped <- crop(x = masked_raster, y = extent(mask_vector))
+plot(cropped)
+
+```
+Import the "raster.df" function to convert cropped raster intop df for ease of manipulation
+
+```{r}
+source("rasterdf.R")
+rasterdf
+```
+This is the output for further analysis
+
+```{r}
+cropped_df <- rasterdf(cropped)
+ggplot(data = cropped_df) +
+  geom_raster(aes(x = x, y = y, fill = value))
+```
+
+However, if you just want a .tif file this is the output.
+Export cropped raster file
+
+```{r}
+writeRaster(cropped,'Oahu_lc_2000.tif',options=c('TFW=YES'))
+```
+
+
+
+
+# Produce nice LC map with Custom colourtable
+This extension is for production of nice looking LC maps for reports, presentations etc. 
+First import the .tif file from above output.
+
+```{r}
+cropped <- raster("Oahu_lc_2000.tif")
+```
+  
+```{r}
+lc_codes <- c(1,2,3,4,5,6,8)
+lc_names <- c("Developed", "Cropland", "Grass/Shrub", "Tree Cover", "Water", "Wetland", "Barren")
+clrs <- c("#525252", "#AB6C28", "#CCB879", "#005a32", "#034e7b", "#4292c6", "#bdbdbd")
+
+#LCcolors <- (lc_codes, clrs)
+#LCcolors$lc_codes <- as.character(LCcolors$lc_codes)
+#lc_codes$lc_names <- as.character(lc_codes$lc_names)
+names(clrs) <- as.character(lc_codes)
+clrs
+```
+
+```{r, eval=FALSE}
+ggplot(data = cropped_df) +
+  geom_raster(aes(x = x, y = y, fill = as.character(value))) +
+  ggtitle("Oahu, 2000") +
+  scale_fill_manual(name = "Land cover",
+                    values = clrs,
+                    labels = lc_names,
+                    na.translate = FALSE) +
+  coord_sf(expand = F) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)
+        )
+  
+```
