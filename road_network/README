@@ -1,0 +1,21 @@
+README_part1
+
+""" This file provides a step by step guide to developing the road network dataset for MHI recreation model """
+
+You will be working with two spatial datasets- the 1. DOT, and 2. State GIS Portal.
+Only the DOT dataset will have speed limits. 
+
+# Get avg speeds for roads in DOT notebook
+First, compile average speeds in the DOT dataset by pulling out roads with speed limit entries, 
+then calculate average speeds by assuming travel at speed limit over the combined length of the road.
+Aim is to come up with unique road names that have their corresponding average speeds (filename "dot_spd_comb.csv"). 
+NOTE that longer roads will have duplicates while shorter ones won't
+
+# Join DOT to state data
+Next we will match speeds in the DOT data to the roads in the state GIS data
+Read in state GIS portal dataset (filename "hnl_roads.xls")
+The road names will be the unique identifier that will create the join between the two datasets.
+DOT dataset spells road names in full while the state GIS data does not, so we need to manipulate the state GIS 
+data so that speeds from DOT will map onto the state GIS data.
+NOTE that the state GIS data has the more extensive road network so it will be the eventual final product
+Version 2 just manually adds  
