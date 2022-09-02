@@ -5,6 +5,6 @@
 
 1. (read GeoTIFF) visualising Asner 2020 coral reef cover GeoTIFFs, and provide metadata
 2. (carlo maui rec) overlay Carlo's Maui recreation sites over an OpenStreetMap basemap, includes 300m radius buffer
-3. Geoprocessing of LCMAP for ecosystem extent
+3. (extent change mapping) Geoprocessing of LCMAP for ecosystem extent
 
 
