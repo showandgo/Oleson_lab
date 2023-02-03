@@ -1,3 +1,3 @@
 Data to populate app found here:
-1. Moku Boundaries vector layer
-2. LCMAP land cover raster layers (for multiple years)
+1. Moku Boundaries vector layer (from HIMARC), with lc change by Moku for each of the MHIs, for years 2000 to 2020
+
