@@ -1,0 +1,42 @@
+---
+title: "Create Grid Layer for Island"
+output: html_document
+date: "2023-02-11"
+---
+This notebook is to create a regular grid (1x1km) for each f the MHIs.
+As part of inputs to the Recreation model.
+
+```{r}
+setwd("C:/Carlo_rec_model/")
+data_DIR <- "C:/all_data/remote sensing data"
+vector_path <- file.path(data_DIR, "/HIMARC/new data/Moku_NEW.shp")
+
+```
+
+
+```{r}
+library(cartography)
+library(sf)
+library(sp)
+```
+
+```{r}
+HI <- st_read(vector_path)
+HI <- st_transform(HI, 4326)    # Project to WGS84 (EPSG: 4326) reference:           https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf
+HI <- st_make_valid(HI)
+
+island <- "Oahu"
+cropped <- HI[HI$ISLAND == island,]
+plot(st_geometry(cropped))
+```
+
+
+```{r}
+getGridLayer(cropped, cellsize = .01, var = "myvar")
+# Need a field like population to be able to do up a grid it seems.
+# Once that's done just run the code below. "mygrid" will be a new dataframe with nrows corresponding to number of gridsquares
+
+# mygrid <- getGridLayer(mtq, cellsize = 3.6e+07, type = "hexagonal", var = "POP")
+# plot(st_geometry(mygrid))
+```
+
