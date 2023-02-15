@@ -1,0 +1,88 @@
+---
+title: "Calculate Beach and Dunes"
+output: html_document
+date: "2023-02-14"
+---
+
+This notebook calculates the area of beaches and sand dunes by Moku. 
+
+
+```{r setup}
+library(rgdal)
+library(sf)
+library(cartography)
+library(sp)
+
+```
+
+## Set up the Moku boundaries layer first 
+
+```{r}
+setwd("C:/Extent Map proj")
+data_DIR <- "C:/all_data/remote sensing data"
+vector_path <- file.path(data_DIR, "/HIMARC/new data/Moku_NEW.shp")
+```
+
+```{r}
+HI <- st_make_valid(st_read(vector_path))
+
+# Project the vector layer to WGS84
+
+HI <- st_transform(HI, CRS("+proj=longlat +datum=WGS84"))
+plot(st_geometry(HI))
+```
+
+## Bring in Beaches and Sand Dunes vector layer 
+# This layer is brought in from PacIOOS
+
+## The layer is adapted from the Gridded USDA-NRCS Soil Survey Geographic (gSSURGO) database. 
+## Polygons are Beaches and sand, including dunes and other areas with sandy substrates. These areas may be more susceptible to coastal erosion. 
+## However, it should be noted that beach environments may be sustained if they are allowed to migrate landward and erode into upland 
+## deposits of beach and dune sand, releasing this sediment into the littoral system. The Beaches and Sand layer identifies surficial deposits only. 
+## It should be used as an initial screening tool and may require verification at the site level.
+
+## Note: No data on Ni'ihau
+
+```{r}
+
+sand_vec_path <- file.path(data_DIR, "/State GIS Portal data/beaches_dunes.shp")
+sand <- st_make_valid(st_read(sand_vec_path))   
+
+sand <- st_transform(sand, CRS("+proj=longlat +datum=WGS84"))
+#sand <- as(sand, 'Spatial')    # this command changes 'sand' from sf to sp (spatial polygon df)
+
+plot(st_geometry(sand))  # If it's an sp, no longer need to use "plot(st_geometry(sand))", just plot() 
+```
+## Calculate the area of beaches and sand dunes by Moku 
+## Cut the vector by Moku, then calculate geometry (area) 
+## output a dataframe of all the input (beaches and dunes) by each Moku
+
+```{r}
+mokus <- HI$NAME2
+
+# Function to calc total area of polygon in a Moku 
+
+moku_crop <- function(input, cropper, moku) {
+ st_crop(input, cropper[cropper$NAME2 == moku,])
+  
+}
+
+area_comb <- c()
+
+for (i in mokus){
+  area <- moku_crop(sand, HI, i)    # Crop input layer with moku boundary
+  sum_area <- sum(st_area(area))    # sum up the area of all the inputs within each Moku
+  area_comb <- c(area_comb, sum_area)    # append the result in a series
+  }
+
+df <- data.frame(
+  Moku <- unlist(mokus),
+  Area <- area_comb/1e+6)
+colnames(df) = c("Moku", "Area (m2)")
+
+```
+
+```{r}
+write.csv(df,"C:/Extent Map proj/beaches_dunes.csv" )
+```
+
