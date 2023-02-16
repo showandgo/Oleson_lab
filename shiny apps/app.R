@@ -1,5 +1,5 @@
 #setwd("~/R_projs/shiny_apps/moku_boundaries/")
-#library(raster)
+
 library(rgdal)
 library(cartography)
 library(sf)
@@ -7,7 +7,7 @@ library(shiny)
 library(spdplyr)
 
 source("plot_shp.R")
-
+source("plot_hist.R")
 
 
 
@@ -15,7 +15,7 @@ source("plot_shp.R")
   titlePanel("Hawai'i Ecosystem Extent Change"),
   
   sidebarLayout(
-    sidebarPanel(helpText("Ecosystem extent change by Moku from year 2000 - 2020"),
+    sidebarPanel(helpText("Explore ecosystem types on your Island and Moku"),
                  
                  selectInput("island", 
                              label = "Choose an Island to display",
@@ -41,14 +41,20 @@ source("plot_shp.R")
     ),
     
     mainPanel(
-      plotOutput("map")
+      
+      tabsetPanel(type = "tabs",
+                  tabPanel("Extent",plotOutput("map")),
+                  tabPanel("Histogram", plotOutput("plot"))
+        
+      )
+      
+      
     )
   )
 )
 server <- function(input, output) {
   
   output$map <- renderPlot({
-    
     
     isl <- switch(input$island,
                    "Hawaii" = list("Hawaii"),
@@ -69,14 +75,39 @@ server <- function(input, output) {
                       "Barren" = list("barr"))
     
     isl <- unlist(isl)
-    
     landc <- unlist(landc)
     
     plot_sub(isl, landc)
+    
+    })
                  
-#args <-c(isl,landc)    
-#do.call(plot_sub, args)
-  })
+  output$plot <- renderPlot({
+    
+    isl <- switch(input$island,
+                  "Hawaii" = list("Hawaii"),
+                  "Oahu" = list("Oahu"),
+                  "Kauai" = list("Kauai"),
+                  "Niihau" = list("Niihau"),
+                  "Kahoolawe" = list("Kahoolawe"),
+                  "Lanai" = list("Lanai"),
+                  "Molokai" = list("Molokai"),
+                  "Maui" = list("Maui"))
+    
+    landc <- switch(input$lc,
+                    "Developed" = list("dev"),
+                    "Cropland" = list("crop"),
+                    "Grass/ Shrubland" = list("grass"), 
+                    "Tree Cover" = list("tree"),
+                    "Wetlands" = list("wet"),
+                    "Barren" = list("barr"))
+    
+    isl <- unlist(isl)
+    landc <- unlist(landc)
+    
+    plot_hist(isl, landc)
+    
+    })
+
   
 }
 shinyApp(ui, server)
