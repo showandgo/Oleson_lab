@@ -1,0 +1,115 @@
+---
+title: "Interactive Beach and Dunes Map"
+output: html_document
+date: "2023-02-17"
+---
+
+
+```{r setup}
+
+library(leaflet)
+library(sf)
+
+library(htmlwidgets)
+
+```
+
+```{r}
+# General dir
+data_DIR <- "C:/all_data"
+
+# Greg Guannel's data
+gregs_geo <- file.path(data_DIR, "/Gregory Guannel/geo_somebeach.shp")
+gregs_dunes <- file.path(data_DIR, "/Gregory Guannel/SandDunes.shp")
+
+# Chip's Coastal Veg Survey
+chips_coast <- file.path(data_DIR, "/remote sensing data/Coastal_Vegetation_Survey_2013-2015/Coastal_Vegetation_Survey_2013-2015.shp")
+
+# USDA eSSURGO data
+surgo_bd <- file.path(data_DIR, "/remote sensing data/State GIS Portal data/beaches_dunes.shp")
+```
+
+```{r}
+gregs_geodata <- st_make_valid(st_read(gregs_geo))
+gregs_dunesdata <- st_make_valid(st_read(gregs_dunes))
+chips_data <- st_make_valid(st_read(chips_coast))
+surgo_data <- st_make_valid(st_read(surgo_bd))
+
+```
+## Project all layers to WGS84
+
+```{r}
+gregs_geodata <- st_transform(gregs_geodata, CRS("+proj=longlat +datum=WGS84"))
+gregs_dunesdata <- st_transform(gregs_dunesdata, CRS("+proj=longlat +datum=WGS84"))
+chips_data <- st_transform(chips_data, CRS("+proj=longlat +datum=WGS84"))
+surgo_data <- st_transform(surgo_data, CRS("+proj=longlat +datum=WGS84"))
+```
+
+## Plot Layers onto Interactive Map
+
+```{r}
+pal <- colorFactor(palette = c("#4292c6", "#005a32", "#c96576", "#CCB879"),
+                   domain = chips_data$Status_Cat)
+```
+
+
+```{r}
+q<- leaflet() %>% 
+  addProviderTiles("Esri.WorldImagery") %>%
+  setView(lng = -157.197383, lat = 20.968666, zoom = 7) %>% 
+  
+  addPolylines(data = chips_data,
+               color = ~pal(Status_Cat),
+               fillOpacity = 1,
+               group = "Chip's Coastal Vegetation Survey"
+               ) %>% 
+  addPolygons(data = surgo_data,
+              group = "USDA eSSURGO",
+              color = "#c6a88e", fillOpacity = 0.8,
+              highlight = highlightOptions(color='white',weight=1)
+              ) %>%
+  addPolylines(data = gregs_geodata,
+              group = "Greg's Geomorphology",
+              label = paste0(gregs_geodata$Landward_s, '\n',
+                             gregs_geodata$Seaward_sh, '\n', 
+                             gregs_geodata$Seaward__1),
+              color = "#623107"
+              ) %>% 
+  addPolylines(data = gregs_dunesdata,
+              group = "Greg's Dunes",
+              color = "#ef7a17"
+              ) %>% 
+  
+  addLegend("bottomright", 
+            colors = c("#4292c6", "#005a32", "#c96576", "#CCB879"), 
+            labels= c("High Quality", "Very High Quality", "Poor Quality", "Moderate Quality"),
+            group = "Chip's Coastal Vegetation Survey",
+            title = "Coastal Vegetation Survey") %>% 
+  
+  addLegend("bottomright", 
+            colors = c("#c6a88e"), 
+            labels= c("Beaches and Dunes"),
+            group = "USDA eSSURGO",
+            title = "USDA eSSURGO") %>%
+  
+  addLegend("bottomright", 
+            colors = c("#623107"), 
+            labels= c("Greg's Geomorphology"),
+            group = "Greg's Geomorphology",
+            title = "Types listed Leeward to Seaward") %>%
+  
+  
+  addLayersControl(overlayGroups = c("Chip's Coastal Vegetation Survey", "USDA eSSURGO", "Greg's Geomorphology", "Greg's Dunes"))
+  
+  
+q
+```
+
+```{r}
+#setwd("C:/Extent Map proj")
+
+saveWidget(q, file= "sand_compare_rast.html")
+```
+
+
+
