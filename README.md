@@ -8,3 +8,4 @@
 3. (extent change mapping) Geoprocessing of LCMAP for ecosystem extent + (By Moku LC Change)
 4. (sankey diagram) Visualise the land cover change matrix between two discrete years
 5. (shiny apps) App for dynamically displaying Moku level ecosystem extent change
+6. (Visualise beaches and Dunes) Interactive map for data providers to discuss further data collection and gaps
