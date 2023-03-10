@@ -149,14 +149,22 @@ agg_bent$prop_cover <- agg_bent$`area m^2` / moku_area
 ```
 
 
+
+
+
+
+
 Get all Moku names or island
 
 ```{r}
-island <- "Oahu"
 
-list(moku_marine$NAME2[moku_marine$ISLAND == island])
+list(unique(moku_marine$ISLAND))
 
-mokus <- list("KOOLAULOA" , "WAIALUA"  ,  "WAIANAE" ,   "EWA"   ,   "KOOLAUPOKO", "KONA OAH")
+isl <- "Hawaii"
+
+list(moku_marine$NAME2[moku_marine$ISLAND == isl])
+
+mok <- list("HAMAKUA", "KOHALA" ,  "HILO"   ,  "PUNA HAW", "KONA HAW", "KAU")
 
 ```
 
@@ -168,44 +176,45 @@ Function to combine in one df all the Benthic type/ class (by Moku)  for one isl
 df <- data.frame()
 
 make_df <- function(mokus, island){
-  
-  
-  for (i in mokus){
-    
-    cropped <- (crop(x = bent_proj, y = extent(moku_marine[moku_marine$NAME2 == i,])))
-    marinemoku_crop <- moku_marine[moku_marine$NAME2 == i,]
-    moku_area <- sum(st_area(marinemoku_crop[marinemoku_crop$NAME2 == i,]))
+  cropped <- (crop(x = bent_proj, y = extent(moku_marine[moku_marine$NAME2 == mokus,])))
+  marinemoku_crop <- moku_marine[moku_marine$NAME2 == mokus,]
+  moku_area <- sum(st_area(marinemoku_crop[marinemoku_crop$NAME2 == mokus,]))
     
     
-    bent_df <- rasterdf(cropped)
-    bent_df <- bent_df %>% filter(bent_df$value > 0)
+  bent_df <- rasterdf(cropped)
+  bent_df <- bent_df %>% filter(bent_df$value > 0)
     
-    agg_bent<- bent_df %>% 
-      count(value) %>% 
-      mutate('area m^2' = n * 100 * 100,
+  agg_bent<- bent_df %>% 
+    count(value) %>% 
+    mutate('area m^2' = n * 100 * 100,
          'area km^2' = round((n * 100 * 100)/ 1e6, 2)) %>% 
-      mutate('prop_cover' = `area m^2` / moku_area)
+    mutate('prop_cover' = `area m^2` / moku_area)
     
-    agg_bent$Benthic_type <- agg_bent$value  
-    agg_bent$Benthic_type[agg_bent$value == 1] <- "Soft Bottom"
-    agg_bent$Benthic_type[agg_bent$value == 2] <- "Other Hard Bottom"
-    agg_bent$Benthic_type[agg_bent$value == 3] <- "Rock/ Boulder"
-    agg_bent$Benthic_type[agg_bent$value == 4] <- "Pavement"
-    agg_bent$Benthic_type[agg_bent$value == 5] <- "Coral Denominated Hard Bottom"
-    agg_bent$Moku <- i
-    agg_bent$Island <- island
-    
-    df <- rbind(df, agg_bent)
-
-  }
-    
-    
+  agg_bent$Benthic_type <- agg_bent$value  
+  agg_bent$Benthic_type[agg_bent$value == 1] <- "Soft Bottom"
+  agg_bent$Benthic_type[agg_bent$value == 2] <- "Other Hard Bottom"
+  agg_bent$Benthic_type[agg_bent$value == 3] <- "Rock/ Boulder"
+  agg_bent$Benthic_type[agg_bent$value == 4] <- "Pavement"
+  agg_bent$Benthic_type[agg_bent$value == 5] <- "Coral Denominated Hard Bottom"
+  agg_bent$Moku <- mokus
+  agg_bent$Island <- island
+  
+  agg_bent
 }
 ```
 
+Compile all Moku in an island
+
 ```{r}
-make_df(mokus, island)
+
+for (i in mok){
+  df <- bind_rows(df, make_df(i, isl))
+}
 
 df
+```
+
+```{r}
+write.csv(df,paste0("C:/Extent Map proj/", isl, "_benthic.csv") )
 ```
 
