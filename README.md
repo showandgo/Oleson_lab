@@ -9,3 +9,4 @@
 4. (sankey diagram) Visualise the land cover change matrix between two discrete years
 5. (shiny apps) App for dynamically displaying Moku level ecosystem extent change
 6. (Visualise beaches and Dunes) Interactive map for data providers to discuss further data collection and gaps
+7. (By Moku Benthic Type) Maps out and calculates the total area & proportion of each benthic type/ class for each Moku, dataframe is for one Island
