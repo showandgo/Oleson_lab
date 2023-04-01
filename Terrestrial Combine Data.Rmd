@@ -1,0 +1,63 @@
+---
+title: "Combine Multiple Terrestrial Data"
+output: html_document
+date: "2023-03-31"
+---
+
+Combine multiple datasets on Ecosystem types on Land (Terrestrial).
+1. USGS LCMAP (2000- 2020)
+2. SDAV Agriculture Land Use (2015, 2020)
+3. CCAP; wetlands only (2010/ 2011; depending on island)
+4. USGS Hawaiian Islands Coastal Vegetation Survey (2013-2015) 
+5. Gregory Guannel geomorphology layer (using SQL Query- "Landward_s" LIKE '%beaches' OR "Seaward_sh" LIKE '%beaches' OR "Seaward__1" LIKE '%beaches'- filters out sections where beaches exist)
+
+```{r setup}
+library(raster)
+library(rgdal)
+library(tidyverse)
+library(sf)
+library(ggspatial)
+```
+
+```{r}
+setwd("C:/Extent Map proj")
+data_DIR <- "C:/all_data"
+#raster_path <- file.path(data_DIR, "/HIMARC/new data/Benthic_Habitat_5Classes_2022_10.tif")
+vector_path <- file.path(data_DIR, "/Gregory Guannel/Geomorphology_waianaeoah.shp")
+```
+
+```{r}
+waia_oah_morph <- st_make_valid(st_read(vector_path))
+waia_oah_morph <- st_transform(waia_oah_morph, CRS("+proj=longlat +datum=WGS84"))
+
+plot(st_geometry(waia_oah_morph))
+```
+
+## Select only beaches from the 3 geology columns
+
+```{r}
+waia_oah_beaches <- 
+  waia_oah_morph %>% 
+  filter(str_detect(Landward_s ,"beaches") | 
+           str_detect(Seaward_sh ,"beaches") |
+           str_detect(Seaward__1 ,"beaches")) 
+```
+
+
+## Calculate total beach length (and % of coastline is beach) 
+
+```{r}
+
+columns <- c("Beach Length",  "Total Length", "% Beach")
+
+df <- data.frame(matrix(nrow = 1, ncol = length(columns)))
+colnames(df) <- columns
+
+df$`Beach Length` <- sum(st_length(waia_oah_beaches))
+df$`Total Length` <- sum(st_length(waia_oah_morph))
+df$`% Beach` <- sum(st_length(waia_oah_beaches)) / sum(st_length(waia_oah_morph)) * 100
+
+df
+
+```
+
