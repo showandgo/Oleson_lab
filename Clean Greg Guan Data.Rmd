@@ -1,0 +1,121 @@
+---
+title: "Clean Greg Guag Data"
+output: html_document
+date: "2023-04-19"
+---
+
+
+```{r setup}
+library(raster)
+library(rgdal)
+library(tidyverse)
+library(sf)
+library(ggspatial)
+```
+
+```{r}
+setwd("C:/all_data/Gregory Guannel")
+data_DIR <- "C:/all_data"
+
+moku_bound <- file.path(data_DIR, "/remote sensing data/HIMARC/new data/Moku_merged.shp")
+vector_path <- file.path(data_DIR, "/Gregory Guannel/Geomorphology.shp")
+```
+
+## Greg Guannel's Beach % by Moku
+
+
+```{r}
+geomorph <- st_make_valid(st_read(vector_path))
+geomorph <- st_transform(geomorph, CRS("+proj=longlat +datum=WGS84"))
+
+moku <- st_make_valid(st_read(moku_bound))
+moku <- st_transform(moku, CRS("+proj=longlat +datum=WGS84"))
+
+#plot(st_geometry(geomorph))
+```
+
+
+```{r}
+beach_len <- data.frame("Moku" = character(),
+              "Beach Length (m)" = numeric(),
+              "Total length (m)" = numeric(),
+              "% Beach (m)"  = numeric())
+
+isl <- unique(na.omit(moku$ISLAND))    #Get unique Island names
+
+for (i in isl){
+  
+  mok <- unique(na.omit(moku$NAME2[moku$ISLAND == i]))    # Get a list of unique Moku names for the island
+  
+  for (i in mok){
+    
+    moku_crop <- moku[moku$NAME2 == i,]
+    cropped <- st_intersection(geomorph, moku_crop)    
+    
+    geomorph_beaches <- cropped %>% 
+      filter(str_detect(Landward_s ,"beaches") | 
+               str_detect(Seaward_sh ,"beaches") | 
+               str_detect(Seaward__1 ,"beaches")) 
+    
+    beach_len <- rbind(beach_len, data.frame("Moku" = i, 
+                                           "Beach Length (m)" = sum(st_length(geomorph_beaches)),
+                                           "Total length (m)" = sum(st_length(cropped)),
+                                           "% Beach (m)"  = sum(st_length(geomorph_beaches)) / sum(st_length(cropped)) * 100))
+    
+  }
+  
+}
+
+
+```
+
+
+```{r}
+write.csv(beach_len, "beach_len.csv")
+```
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+## Workings
+
+
+## Select only beaches from the 3 geology columns
+
+```{r}
+
+moku_crop <- moku[moku$NAME2 == "WAIANAE",]
+cropped <- st_intersection(geomorph, moku_crop) 
+
+geomorph_beaches <- cropped %>% 
+  filter(str_detect(Landward_s ,"beaches") | 
+           str_detect(Seaward_sh ,"beaches") |
+           str_detect(Seaward__1 ,"beaches")) 
+```
+
+
+## Calculate total beach length (and % of coastline is beach) 
+
+
+```{r}
+
+columns <- c("Beach Length",  "Total Length", "% Beach")
+
+df <- data.frame(matrix(nrow = 1, ncol = length(columns)))
+colnames(df) <- columns
+
+df$`Beach Length` <- sum(st_length(geomorph_beaches))
+df$`Total Length` <- sum(st_length(cropped))
+df$`% Beach` <- sum(st_length(geomorph_beaches)) / sum(st_length(cropped)) * 100
+
+df
+
+```
+
+
+
+```{r}
+plot(st_geometry(cropped))
+plot(st_geometry(geomorph_beaches))
+```
+
